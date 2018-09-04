@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.0/mapsjs-ui.css?dp-version=1533195059" />
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-ui.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-mapevents.js"></script>
+    <style>
+        html,
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        html,
+        body,
+        #map {
+            height: 100%;
+            width: 100vw;
+        }
+    </style>
+</head>
+
+<body onresize="resize()">
+    <div id="pde_carto" style=" position: absolute; top: 20px; z-index: 1000; left: 20px; ">
+        <textarea id="pde_carto" type="text" style="font-size: 14px"></textarea>
+        <script type="text/javascript" charset="UTF-8">
+            document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
+        </script>
+    </div>
+    <div id="map">
+        <script type="text/javascript" charset="UTF-8">
+            var he_appid = 'KymxRBvsVraBqbxy6gCt';
+            var he_appcode = 'LbNbmVAeiyg51Dbr2C_NOw';
+            var platform = new H.service.Platform({
+                app_id: he_appid
+                , app_code: he_appcode
+                , useHTTPS: true
+                , useCIT: true
+            });
+            //var geocoder = platform.getGeocodingService();
+            //var router = platform.getRoutingService();
+            var pde_service = platform.getPlatformDataService();
+            var pixelRatio = window.devicePixelRatio || 1;
+            var ppi = pixelRatio === 1 ? 72 : 320
+            var tile_size = pixelRatio === 1 ? 256 : 512
+            var defaultLayers = platform.createDefaultLayers({
+                tileSize: tile_size
+                , ppi: ppi
+            , });
+            var map = new H.Map(document.getElementById('map'), defaultLayers.terrain.base, {
+                center: {
+                    lat: 25.040053
+                    , lng: 121.511976
+                }
+                , zoom: 14
+                , pixelRatio: pixelRatio
+            , });
+            var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+            var marker_group = new H.map.Group();
+            var selected_carto_group = new H.map.Group();
+            map.addObject(marker_group);
+            map.addObject(selected_carto_group);
+            navigator.geolocation.getCurrentPosition(function (location) {
+                var gps_location_marker = new H.map.Circle({
+                    lat: location.coords.latitude
+                    , lng: location.coords.longitude
+                }, 5, {
+                    style: {
+                        strokeColor: 'rgba(245, 117, 249, 0.3)'
+                        , lineWidth: 1
+                        , fillColor: 'rgba(184, 197, 252, 0.5)'
+                    }
+                });
+                var gps_location_marker_radius = new H.map.Circle({
+                    lat: location.coords.latitude
+                    , lng: location.coords.longitude
+                }, location.coords.accuracy, {
+                    style: {
+                        strokeColor: 'rgba(245, 117, 249, 0.3)'
+                        , lineWidth: 1
+                        , fillColor: 'rgba(250, 184, 252, 0.3)'
+                    }
+                });
+                gps_location_marker_radius.setZIndex(0);
+                gps_location_marker.setZIndex(10);
+                map.addObject(gps_location_marker_radius);
+                map.addObject(gps_location_marker);
+                map.setCenter({
+                    lat: location.coords.latitude
+                    , lng: location.coords.longitude
+                });
+            });
+            var ui = H.ui.UI.createDefault(map, defaultLayers);
+            ui.removeControl('mapsettings');
+            var xmlHttp;
+
+            function httpGet(theUrl) {
+                xmlHttp = new XMLHttpRequest();
+                xmlHttp.open("GET", theUrl, false); // false for synchronous request
+                xmlHttp.send(null);
+                return xmlHttp.responseText;
+            };
+
+            function getURL(URL) {
+                return new Promise(function (resolve, reject) {
+                    var req = new XMLHttpRequest();
+                    req.open('GET', URL, true);
+                    req.onload = function () {
+                        if (req.status === 200) {
+                            resolve(req.responseText);
+                        }
+                        else {
+                            reject(new Error(req.statusText));
+                        }
+                    };
+                    req.onerror = function () {
+                        reject(new Error(req.statusText));
+                    };
+                    req.send();
+                });
+            }
+            var bubble;
+
+            function purge_bubble() {
+                if (ui.getBubbles().length > 0) {
+                    for (i = 0; ui.getBubbles().length; i++) {
+                        ui.removeBubble(ui.getBubbles()[i]);
+                    }
+                }
+            }
+            var carto_id_list = [];
+            var key_attribute_list = [];
+
+            function display_carto_layers() {
+                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_LAYERS, H.service.extension.platformData.Service.EntryPointType.JSON, {
+                    region: 'TWN'
+                }, onFulfilled, console.error);
+
+                function onFulfilled(value) {
+                    for (i = 0; i < value.length; i++) {
+                        var name = value[i].name
+                            , tileLevel = value[i].tileLevel
+                        var carto_layer_name = name.match(/CARTO_POLY/g);
+                        if (carto_layer_name) {
+                            carto_id_list.push(name);
+                            key_attribute_list.push('FEATURE_TYPE');
+                            style = new H.map.SpatialStyle();
+                            var boundariesProvider = new H.service.extension.platformData.TileProvider(pde_service, {
+                                layer: name
+                                , level: tileLevel
+                            }, {
+                                resultType: H.service.extension.platformData.TileProvider.ResultType.POLYLINE
+                                , styleCallback: function (data) {
+                                    return style
+                                }
+                            });
+                            var boundaries = new H.map.layer.TileLayer(boundariesProvider);
+                            map.addLayer(boundaries);
+                        }
+                    }
+                }
+            };
+            display_carto_layers();
+
+            function click_to_carto(evt) {
+                document.getElementById('pde_carto').innerHTML = '';
+                selected_carto_group.removeAll();
+                marker_group.removeAll();
+                //purge_bubble();
+                var center = map.screenToGeo(evt.viewportX, evt.viewportY);
+                var pde_proximity_url = 'https://pde.cit.api.here.com/1/search/proximity.json?app_id=' + he_appid + '&app_code=' + he_appcode + '&layer_ids=' + carto_id_list.toString() + '&proximity=' + center.lat + ',' + center.lng + '&key_attributes=' + key_attribute_list.toString();
+
+                function onResult(result) {
+                    console.log(result);
+                }
+
+                function onError(error) {
+                    console.log(error);
+                }
+                getURL(pde_proximity_url).then(function onFulfilled(value) {
+                    var r = JSON.parse(value);
+                    var bubble_content = '';
+                    for (i = 0; i < r.geometries.length; i++) {
+                        var names = r.geometries[i].attributes.NAMES
+                            , feature_type = r.geometries[i].attributes.FEATURE_TYPE
+                            , carto_id = r.geometries[i].attributes.CARTO_ID
+                            , face_id = r.geometries[i].attributes.FACE_ID
+                            , layer_id = r.geometries[i].layerId
+                            , wkt = r.geometries[i].geometry
+                            , geo = H.util.wkt.toGeometry(wkt)
+                            , polygon = new H.map.Polygon(geo, {
+                                style: {
+                                    strokeColor: 'red'
+                                    , fillColor: 'rgba(255, 0, 255, 0.1)'
+                                }
+                            });
+                        selected_carto_group.addObject(polygon);
+                        bubble_innerHTML = '<p style="font-size: 10px;"><font size="1">INDEX: <mark>' + i + '</mark><br>NAMES: <mark>' + names + '</mark><br>FEATURE_TYPE: <mark>' + feature_type + '</mark><br>CARTO_ID: <mark>' + carto_id + '</mark><br>FACE_ID: <mark>' + face_id + '</mark></font></p>';
+                        bubble_content += bubble_innerHTML;
+                    }
+                    document.getElementById('pde_carto').innerHTML = bubble_content;
+                    var marker = new H.map.Marker(center);
+                    marker_group.addObject(marker);
+                    /*
+                    var bubble = new H.ui.InfoBubble(center, {
+                        content: bubble_content.toString()
+                    });
+                    ui.addBubble(bubble);
+                    */
+                }).catch(function onRejected(error) {
+                    console.error(error);
+                });
+            }
+            map.addEventListener('contextmenu', click_to_carto);
+            map.addEventListener('tap', function () {
+                marker_group.removeAll();
+                selected_carto_group.removeAll();
+                document.getElementById('pde_carto').innerHTML = '';
+            });
+
+            function resize() {
+                var view_port = map.getViewPort();
+                view_port.resize();
+            }
+        </script>
+    </div>
+</body>
+
+</html>
