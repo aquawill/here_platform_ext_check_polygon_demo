@@ -94,6 +94,12 @@
                     , lng: location.coords.longitude
                 });
             });
+
+            function clear_view() {
+                marker_group.removeAll();
+                selected_carto_group.removeAll();
+                document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
+            }
             var ui = H.ui.UI.createDefault(map, defaultLayers);
             ui.removeControl('mapsettings');
             var xmlHttp;
@@ -134,18 +140,35 @@
             }
             var carto_id_list = [];
             var key_attribute_list = [];
+            var attr_disc_dict = {};
 
             function display_carto_layers() {
-                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_LAYERS, H.service.extension.platformData.Service.EntryPointType.JSON, {
-                    region: 'TWN'
-                }, onFulfilled, console.error);
-
-                function onFulfilled(value) {
+                function attr_listing(value) {
                     for (i = 0; i < value.length; i++) {
                         var name = value[i].name
-                            , tileLevel = value[i].tileLevel
-                        var carto_layer_name = name.match(/CARTO_POLY/g);
-                        if (carto_layer_name) {
+                            , description = value[i].description;
+                        if (name.match(/FEATURE_TYPE/g)) {
+                            var desc_list = description.split('<br/>');
+                            //console.log(desc_list.length, desc_list);
+                            for (j = 0; j < desc_list.length; j++) {
+                                if (desc_list[j].split(' : ').length > 1) {
+                                    var attr_key = desc_list[j].split(' : ')[0]
+                                        , attr_value = desc_list[j].split(' : ')[1]
+                                    attr_disc_dict[attr_key] = attr_value;
+                                }
+                            }
+                        }
+                    }
+                    console.log(attr_disc_dict);
+                }
+
+                function layer_listing(value) {
+                    for (i = 0; i < value.length; i++) {
+                        var name = value[i].name
+                            , tileLevel = value[i].tileLevel;
+                        //var carto_layer_name = name.match(/CARTO_POLY/g);
+                        //var building_layer_name = 'BUILDING';
+                        if (name.match(/CARTO_POLY/g) || name.match(/BUILDING/g) || name.match(/ADMIN_POLY/g)) {
                             carto_id_list.push(name);
                             key_attribute_list.push('FEATURE_TYPE');
                             style = new H.map.SpatialStyle();
@@ -163,30 +186,29 @@
                         }
                     }
                 }
+                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_LAYERS, H.service.extension.platformData.Service.EntryPointType.JSON, {
+                    region: 'APAC'
+                }, layer_listing, console.error);
+                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_ATTRIBUTES, H.service.extension.platformData.Service.EntryPointType.JSON, {
+                    region: 'APAC'
+                }, attr_listing, console.error);
             };
             display_carto_layers();
 
             function click_to_carto(evt) {
-                document.getElementById('pde_carto').innerHTML = '';
-                selected_carto_group.removeAll();
-                marker_group.removeAll();
+                document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
+                clear_view();
                 //purge_bubble();
                 var center = map.screenToGeo(evt.viewportX, evt.viewportY);
                 var pde_proximity_url = 'https://pde.cit.api.here.com/1/search/proximity.json?app_id=' + he_appid + '&app_code=' + he_appcode + '&layer_ids=' + carto_id_list.toString() + '&proximity=' + center.lat + ',' + center.lng + '&key_attributes=' + key_attribute_list.toString();
-
-                function onResult(result) {
-                    console.log(result);
-                }
-
-                function onError(error) {
-                    console.log(error);
-                }
                 getURL(pde_proximity_url).then(function onFulfilled(value) {
                     var r = JSON.parse(value);
                     var bubble_content = '';
                     for (i = 0; i < r.geometries.length; i++) {
                         var names = r.geometries[i].attributes.NAMES
-                            , feature_type = r.geometries[i].attributes.FEATURE_TYPE
+                            , name = r.geometries[i].attributes.NAME
+                            , feature_type = parseInt(r.geometries[i].attributes.FEATURE_TYPE)
+                            , feature_desc = attr_disc_dict[feature_type]
                             , carto_id = r.geometries[i].attributes.CARTO_ID
                             , face_id = r.geometries[i].attributes.FACE_ID
                             , layer_id = r.geometries[i].layerId
@@ -198,8 +220,11 @@
                                     , fillColor: 'rgba(255, 0, 255, 0.1)'
                                 }
                             });
+                        if (!names) {
+                            names = name;
+                        }
                         selected_carto_group.addObject(polygon);
-                        bubble_innerHTML = '<p style="font-size: 10px;"><font size="1">INDEX: <mark>' + i + '</mark><br>NAMES: <mark>' + names + '</mark><br>FEATURE_TYPE: <mark>' + feature_type + '</mark><br>CARTO_ID: <mark>' + carto_id + '</mark><br>FACE_ID: <mark>' + face_id + '</mark></font></p>';
+                        bubble_innerHTML = '<p style="font-size: 10px;"><font size="1">INDEX: <mark>' + i + '</mark><br>LAYER_ID: <mark>' + layer_id + '</mark><br>NAMES: <mark>' + names + '</mark><br>FEATURE_TYPE: <mark>' + feature_type + ' / ' + feature_desc + '</mark><br>CARTO_ID: <mark>' + carto_id + '</mark><br>FACE_ID: <mark>' + face_id + '</mark></font></p>';
                         bubble_content += bubble_innerHTML;
                     }
                     document.getElementById('pde_carto').innerHTML = bubble_content;
@@ -216,11 +241,8 @@
                 });
             }
             map.addEventListener('contextmenu', click_to_carto);
-            map.addEventListener('tap', function () {
-                marker_group.removeAll();
-                selected_carto_group.removeAll();
-                document.getElementById('pde_carto').innerHTML = '';
-            });
+            map.addEventListener('tap', clear_view);
+            document.getElementById('pde_carto').addEventListener('tap', clear_view);
 
             function resize() {
                 var view_port = map.getViewPort();
