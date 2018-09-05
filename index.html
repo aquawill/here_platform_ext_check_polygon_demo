@@ -175,6 +175,8 @@
                             var boundariesProvider = new H.service.extension.platformData.TileProvider(pde_service, {
                                 layer: name
                                 , level: tileLevel
+                                , pixelRatio: pixelRatio
+                                , tileSize: tile_size
                             }, {
                                 resultType: H.service.extension.platformData.TileProvider.ResultType.POLYLINE
                                 , styleCallback: function (data) {
