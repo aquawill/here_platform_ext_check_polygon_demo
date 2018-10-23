@@ -1,4 +1,5 @@
 **Polygon Identifier with HEREPlatform Extension**
+URL: https://aquawill.github.io/here_platform_ext_check_polygon_demo/
 
 Powered byHERE Location Services:
 
