@@ -1,4 +1,4 @@
-**Polygon Identifier with HEREPlatform Extension**
+**Polygon Identifier with HERE Platform Extension**
 
 URL: https://aquawill.github.io/here_platform_ext_check_polygon_demo/
 
