@@ -25,7 +25,9 @@
 </head>
 
 <body onresize="resize()">
-    <div id="pde_carto" style=" position: absolute; top: 20px; z-index: 1000; left: 20px; ">
+    <div id="searchbar" style=" position: absolute; top: 20px; z-index: 1000; left: 20px; ">
+        <input id="geocoder_box" type="text" style="font-size: 16px;" placeholder="Search addresses, admin areas, streets..." maxlength="50" size="40"> </div>
+    <div id="pde_carto" style=" position: absolute; top: 50px; z-index: 1000; left: 20px; ">
         <textarea id="pde_carto" type="text" style="font-size: 14px"></textarea>
         <script type="text/javascript" charset="UTF-8">
             document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
@@ -41,8 +43,7 @@
                 , useHTTPS: true
                 , useCIT: false
             });
-            //var geocoder = platform.getGeocodingService();
-            //var router = platform.getRoutingService();
+            var geocoder = platform.getGeocodingService();
             var pde_service = platform.getPlatformDataService();
             var pixelRatio = window.devicePixelRatio || 1;
             var ppi = pixelRatio === 1 ? 72 : 320
@@ -51,19 +52,21 @@
                 tileSize: tile_size
                 , ppi: ppi
             , });
-            var map = new H.Map(document.getElementById('map'), defaultLayers.terrain.base, {
+            var map = new H.Map(document.getElementById('map'), defaultLayers.normal.map, {
                 center: {
-                    lat: 25.040053
-                    , lng: 121.511976
+                    lat: 52.51636
+                    , lng: 13.37859
                 }
-                , zoom: 14
+                , zoom: 15
                 , pixelRatio: pixelRatio
             , });
             var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
             var marker_group = new H.map.Group();
             var selected_carto_group = new H.map.Group();
+            var geocoder_result_group = new H.map.Group();
             map.addObject(marker_group);
             map.addObject(selected_carto_group);
+            map.addObject(geocoder_result_group);
             navigator.geolocation.getCurrentPosition(function (location) {
                 var gps_location_marker = new H.map.Circle({
                     lat: location.coords.latitude
@@ -168,7 +171,7 @@
                             , tileLevel = value[i].tileLevel;
                         //var carto_layer_name = name.match(/CARTO_POLY/g);
                         //var building_layer_name = 'BUILDING';
-                        if (name.match(/CARTO_POLY/g) || name.match(/BUILDING/g) || name.match(/ADMIN_POLY/g)) {
+                        if (name.match(/BUILDING/g)) {
                             carto_id_list.push(name);
                             key_attribute_list.push('FEATURE_TYPE');
                             style = new H.map.SpatialStyle();
@@ -189,10 +192,10 @@
                     }
                 }
                 pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_LAYERS, H.service.extension.platformData.Service.EntryPointType.JSON, {
-                    region: 'APAC'
+//                    region: 'WEU'
                 }, layer_listing, console.error);
                 pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_ATTRIBUTES, H.service.extension.platformData.Service.EntryPointType.JSON, {
-                    region: 'APAC'
+//                    region: 'WEU'
                 }, attr_listing, console.error);
             };
             display_carto_layers();
@@ -250,6 +253,60 @@
                 var view_port = map.getViewPort();
                 view_port.resize();
             }
+            
+            document.getElementById('searchbar').addEventListener('keypress', onSearch)
+
+            function onSearch(e) {
+                var keyCode = null;
+                if (e.which) {
+                    keyCode = e.which;
+                } else if (e.keyCode) {
+                    keyCode = e.keyCode;
+                }
+                if (keyCode == 13) {
+                    var geocoder_string = e.srcElement.value;
+                    var geocodingParams = {
+                        searchText: geocoder_string
+                    };
+                    geocoder.geocode(geocodingParams, show_geocode_result, function(e) {
+                        console.log(e);
+                    });
+                }
+            }
+
+            function show_geocode_result(result) {
+                geocoder_result_group.removeAll();
+                console.log(result);
+                if (result.Response.View.length > 0) {
+                    var location = result.Response.View[0].Result[0],
+                        display_position = location['Location']['DisplayPosition'],
+                        lat = display_position['Latitude'],
+                        lng = display_position['Longitude'];
+                    map.setCenter({
+                        lat: lat,
+                        lng: lng
+                    });
+                    var geocoder_result_marker = new H.map.Marker({
+                        lat: lat,
+                        lng: lng
+                    })
+                    geocoder_result_marker.setData(location['Location']['Address']['Label']);
+                    var bubble = new H.ui.InfoBubble({
+                        lat: lat,
+                        lng: lng
+                    }, {
+                        content: location['Location']['Address']['Label']
+                    })
+                    geocoder_result_marker.addEventListener('tap', function() {
+                        purge_bubble();
+                        ui.addBubble(bubble);
+                    });
+                    geocoder_result_group.addObject(geocoder_result_marker);
+                } else {
+                    window.alert('Please input a valid address!');
+                }
+            };
+            
         </script>
     </div>
 </body>
