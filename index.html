@@ -171,7 +171,7 @@
                             , tileLevel = value[i].tileLevel;
                         //var carto_layer_name = name.match(/CARTO_POLY/g);
                         //var building_layer_name = 'BUILDING';
-                        if (name.match(/BUILDING/g)) {
+                        if (name.match(/CARTO_POLY/g) || name.match(/BUILDING/g) || name.match(/ADMIN_POLY/g)) {
                             carto_id_list.push(name);
                             key_attribute_list.push('FEATURE_TYPE');
                             style = new H.map.SpatialStyle();
