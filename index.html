@@ -2,19 +2,20 @@
 <html>
 
 <head>
-    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
-    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.0/mapsjs-ui.css?dp-version=1533195059" />
-    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-core.js"></script>
-    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-service.js"></script>
-    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-ui.js"></script>
-    <script type="text/javascript" src="https://js.api.here.com/v3/3.0/mapsjs-mapevents.js"></script>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" charset="UTF-8" />
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css?dp-version=1533195059" />
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <style>
         html,
         body {
             padding: 0;
             margin: 0;
         }
-        
+
         html,
         body,
         #map {
@@ -26,22 +27,22 @@
 
 <body onresize="resize()">
     <div id="searchbar" style=" position: absolute; top: 20px; z-index: 1000; left: 20px; ">
-        <input id="geocoder_box" type="text" style="font-size: 16px;" placeholder="Search addresses, admin areas, streets..." maxlength="50" size="40"> </div>
+        <input id="geocoder_box" type="text" style="font-size: 16px;"
+            placeholder="Search addresses, admin areas, streets..." maxlength="50" size="40"> </div>
     <div id="pde_carto" style=" position: absolute; top: 50px; z-index: 1000; left: 20px; ">
         <textarea id="pde_carto" type="text" style="font-size: 14px"></textarea>
         <script type="text/javascript" charset="UTF-8">
-            document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
+            document.getElementById('pde_carto').innerHTML =
+                '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
         </script>
     </div>
     <div id="map">
         <script type="text/javascript" charset="UTF-8">
-            var he_appid = 'JDuZcEECeUBXGkFT6zp9';
-            var he_appcode = 'pTa6-IjR6ElKf0kjAolO2A';
+            var he_apikey = 'Q9xlj7u7mi-hAQwQi1NUIEaDXgj18f5zJ1iI-cuzSyQ';
             var platform = new H.service.Platform({
-                app_id: he_appid
-                , app_code: he_appcode
-                , useHTTPS: true
-                , useCIT: false
+                apikey: he_apikey,
+                useHTTPS: true,
+                useCIT: false
             });
             var geocoder = platform.getGeocodingService();
             var pde_service = platform.getPlatformDataService();
@@ -49,43 +50,44 @@
             var ppi = pixelRatio === 1 ? 72 : 320
             var tile_size = pixelRatio === 1 ? 256 : 512
             var defaultLayers = platform.createDefaultLayers({
-                tileSize: tile_size
-                , ppi: ppi
-            , });
-            var map = new H.Map(document.getElementById('map'), defaultLayers.normal.map, {
+                tileSize: tile_size,
+                ppi: ppi,
+            });
+            var map = new H.Map(document.getElementById('map'), defaultLayers.raster.normal.map, {
                 center: {
-                    lat: 52.51636
-                    , lng: 13.37859
-                }
-                , zoom: 15
-                , pixelRatio: pixelRatio
-            , });
+                    lat: 52.51636,
+                    lng: 13.37859
+                },
+                zoom: 15,
+                pixelRatio: pixelRatio,
+            });
             var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
             var marker_group = new H.map.Group();
             var selected_carto_group = new H.map.Group();
             var geocoder_result_group = new H.map.Group();
+            var boundary_layer = null;
             map.addObject(marker_group);
             map.addObject(selected_carto_group);
             map.addObject(geocoder_result_group);
             navigator.geolocation.getCurrentPosition(function (location) {
                 var gps_location_marker = new H.map.Circle({
-                    lat: location.coords.latitude
-                    , lng: location.coords.longitude
+                    lat: location.coords.latitude,
+                    lng: location.coords.longitude
                 }, 5, {
                     style: {
-                        strokeColor: 'rgba(245, 117, 249, 0.3)'
-                        , lineWidth: 1
-                        , fillColor: 'rgba(184, 197, 252, 0.5)'
+                        strokeColor: 'rgba(245, 117, 249, 0.3)',
+                        lineWidth: 1,
+                        fillColor: 'rgba(184, 197, 252, 0.5)'
                     }
                 });
                 var gps_location_marker_radius = new H.map.Circle({
-                    lat: location.coords.latitude
-                    , lng: location.coords.longitude
+                    lat: location.coords.latitude,
+                    lng: location.coords.longitude
                 }, location.coords.accuracy, {
                     style: {
-                        strokeColor: 'rgba(245, 117, 249, 0.3)'
-                        , lineWidth: 1
-                        , fillColor: 'rgba(250, 184, 252, 0.3)'
+                        strokeColor: 'rgba(245, 117, 249, 0.3)',
+                        lineWidth: 1,
+                        fillColor: 'rgba(250, 184, 252, 0.3)'
                     }
                 });
                 gps_location_marker_radius.setZIndex(0);
@@ -93,45 +95,36 @@
                 map.addObject(gps_location_marker_radius);
                 map.addObject(gps_location_marker);
                 map.setCenter({
-                    lat: location.coords.latitude
-                    , lng: location.coords.longitude
+                    lat: location.coords.latitude,
+                    lng: location.coords.longitude
                 });
             });
 
             function clear_view() {
                 marker_group.removeAll();
                 selected_carto_group.removeAll();
-                document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
+                document.getElementById('pde_carto').innerHTML =
+                    '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
             }
             var ui = H.ui.UI.createDefault(map, defaultLayers);
             ui.removeControl('mapsettings');
-            var xmlHttp;
 
-            function httpGet(theUrl) {
-                xmlHttp = new XMLHttpRequest();
-                xmlHttp.open("GET", theUrl, false); // false for synchronous request
-                xmlHttp.send(null);
-                return xmlHttp.responseText;
-            };
-
-            function getURL(URL) {
-                return new Promise(function (resolve, reject) {
-                    var req = new XMLHttpRequest();
-                    req.open('GET', URL, true);
-                    req.onload = function () {
-                        if (req.status === 200) {
-                            resolve(req.responseText);
-                        }
-                        else {
-                            reject(new Error(req.statusText));
-                        }
-                    };
-                    req.onerror = function () {
-                        reject(new Error(req.statusText));
-                    };
-                    req.send();
-                });
+            function get_random_color(alpha) {
+                var max = 192
+                var min = 32
+                var r = Math.floor(Math.random() * (max - min)) + min;
+                var g = Math.floor(Math.random() * (max - min)) + min;
+                var b = Math.floor(Math.random() * (max - min)) + min;
+                color_with_alpha = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')'
+                color = 'rgb(' + r + ', ' + g + ', ' + b + ')'
+                return {
+                    'color': color,
+                    'color_with_alpha': color_with_alpha
+                };
             }
+
+            get_random_color(0.05)
+
             var bubble;
 
             function purge_bubble() {
@@ -148,15 +141,15 @@
             function display_carto_layers() {
                 function attr_listing(value) {
                     for (i = 0; i < value.length; i++) {
-                        var name = value[i].name
-                            , description = value[i].description;
+                        var name = value[i].name,
+                            description = value[i].description;
                         if (name.match(/FEATURE_TYPE/g)) {
                             var desc_list = description.split('<br/>');
                             //console.log(desc_list.length, desc_list);
                             for (j = 0; j < desc_list.length; j++) {
                                 if (desc_list[j].split(' : ').length > 1) {
-                                    var attr_key = desc_list[j].split(' : ')[0]
-                                        , attr_value = desc_list[j].split(' : ')[1]
+                                    var attr_key = desc_list[j].split(' : ')[0],
+                                        attr_value = desc_list[j].split(' : ')[1]
                                     attr_disc_dict[attr_key] = attr_value;
                                 }
                             }
@@ -167,82 +160,93 @@
 
                 function layer_listing(value) {
                     for (i = 0; i < value.length; i++) {
-                        var name = value[i].name
-                            , tileLevel = value[i].tileLevel;
+                        var name = value[i].name,
+                            tileLevel = value[i].tileLevel;
                         //var carto_layer_name = name.match(/CARTO_POLY/g);
                         //var building_layer_name = 'BUILDING';
                         if (name.match(/CARTO_POLY/g) || name.match(/BUILDING/g) || name.match(/ADMIN_POLY/g)) {
                             carto_id_list.push(name);
                             key_attribute_list.push('FEATURE_TYPE');
-                            style = new H.map.SpatialStyle();
+                            style = new H.map.SpatialStyle({
+                                strokeColor: 'rgba(0, 0, 255, 0.5)',
+                                lineWidth: 1,
+                            });
                             var boundariesProvider = new H.service.extension.platformData.TileProvider(pde_service, {
-                                layer: name
-                                , level: tileLevel
-                                , pixelRatio: pixelRatio
-                                , tileSize: tile_size
+                                layer: name,
+                                level: tileLevel,
+                                pixelRatio: pixelRatio,
+                                tileSize: tile_size
                             }, {
-                                resultType: H.service.extension.platformData.TileProvider.ResultType.POLYLINE
-                                , styleCallback: function (data) {
+                                resultType: H.service.extension.platformData.TileProvider.ResultType.POLYLINE,
+                                styleCallback: function (data) {
                                     return style
                                 }
                             });
-                            var boundaries = new H.map.layer.TileLayer(boundariesProvider);
-                            map.addLayer(boundaries);
+                            boundary_layer = new H.map.layer.TileLayer(boundariesProvider);
+                            map.addLayer(boundary_layer);
                         }
                     }
                 }
-                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_LAYERS, H.service.extension.platformData.Service.EntryPointType.JSON, {
-//                    region: 'WEU'
-                }, layer_listing, console.error);
-                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_ATTRIBUTES, H.service.extension.platformData.Service.EntryPointType.JSON, {
-//                    region: 'WEU'
-                }, attr_listing, console.error);
+                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_LAYERS, H.service.extension
+                    .platformData.Service.EntryPointType.JSON, {
+                        //                    region: 'WEU'
+                    }, layer_listing, console.error);
+                pde_service.request(H.service.extension.platformData.Service.EntryPoint.DOC_ATTRIBUTES, H.service
+                    .extension.platformData.Service.EntryPointType.JSON, {
+                        //                    region: 'WEU'
+                    }, attr_listing, console.error);
             };
             display_carto_layers();
 
             function click_to_carto(evt) {
-                document.getElementById('pde_carto').innerHTML = '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
+                document.getElementById('pde_carto').innerHTML =
+                    '<mark>Right Click To Check Polygon, Left Click To Clear.</mark>';
                 clear_view();
+                map.removeLayer(boundary_layer);
                 //purge_bubble();
                 var center = map.screenToGeo(evt.viewportX, evt.viewportY);
-                var pde_proximity_url = 'https://pde.cit.api.here.com/1/search/proximity.json?app_id=' + he_appid + '&app_code=' + he_appcode + '&layer_ids=' + carto_id_list.toString() + '&proximity=' + center.lat + ',' + center.lng + '&key_attributes=' + key_attribute_list.toString();
-                getURL(pde_proximity_url).then(function onFulfilled(value) {
-                    var r = JSON.parse(value);
-                    var bubble_content = '';
-                    for (i = 0; i < r.geometries.length; i++) {
-                        var names = r.geometries[i].attributes.NAMES
-                            , name = r.geometries[i].attributes.NAME
-                            , feature_type = parseInt(r.geometries[i].attributes.FEATURE_TYPE)
-                            , feature_desc = attr_disc_dict[feature_type]
-                            , carto_id = r.geometries[i].attributes.CARTO_ID
-                            , face_id = r.geometries[i].attributes.FACE_ID
-                            , layer_id = r.geometries[i].layerId
-                            , wkt = r.geometries[i].geometry
-                            , geo = H.util.wkt.toGeometry(wkt)
-                            , polygon = new H.map.Polygon(geo, {
-                                style: {
-                                    strokeColor: 'red'
-                                    , fillColor: 'rgba(255, 0, 255, 0.1)'
-                                }
-                            });
-                        if (!names) {
-                            names = name;
+                var pde_proximity_url = 'https://s.fleet.ls.hereapi.com/1/search/proximity.json?apikey=' + he_apikey +
+                    '&layer_ids=' + carto_id_list.toString() + '&proximity=' + center.lat + ',' + center.lng +
+                    '&key_attributes=' + key_attribute_list.toString();
+                $.getJSON({
+                    url: pde_proximity_url,
+                    success: function (r) {
+                        var bubble_content = '';
+                        for (i = 0; i < r.geometries.length; i++) {
+                            random_color = get_random_color(0.05)
+                            var names = r.geometries[i].attributes.NAMES,
+                                name = r.geometries[i].attributes.NAME,
+                                feature_type = parseInt(r.geometries[i].attributes.FEATURE_TYPE),
+                                feature_desc = attr_disc_dict[feature_type],
+                                carto_id = r.geometries[i].attributes.CARTO_ID,
+                                face_id = r.geometries[i].attributes.FACE_ID,
+                                layer_id = r.geometries[i].layerId,
+                                wkt = r.geometries[i].geometry,
+                                geo = H.util.wkt.toGeometry(wkt),
+                                polygon = new H.map.Polygon(geo, {
+                                    style: {
+                                        strokeColor: random_color.color,
+                                        fillColor: random_color.color_with_alpha,
+                                        lineWidth: 3
+                                    }
+                                });
+                            if (!names) {
+                                names = name;
+                            }
+                            selected_carto_group.addObject(polygon);
+                            bubble_innerHTML =
+                                '<p style="font-size: 12px; color: white; background-color: ' +
+                                random_color.color + ';"><font size="1">INDEX: ' +
+                                i + '<br>LAYER_ID: ' + layer_id + '<br>NAMES: ' +
+                                names + '<br>FEATURE_TYPE: ' + feature_type + ' / ' +
+                                feature_desc + '<br>CARTO_ID: ' + carto_id +
+                                '<br>FACE_ID: ' + face_id + '</font></p>';
+                            bubble_content += bubble_innerHTML;
                         }
-                        selected_carto_group.addObject(polygon);
-                        bubble_innerHTML = '<p style="font-size: 10px;"><font size="1">INDEX: <mark>' + i + '</mark><br>LAYER_ID: <mark>' + layer_id + '</mark><br>NAMES: <mark>' + names + '</mark><br>FEATURE_TYPE: <mark>' + feature_type + ' / ' + feature_desc + '</mark><br>CARTO_ID: <mark>' + carto_id + '</mark><br>FACE_ID: <mark>' + face_id + '</mark></font></p>';
-                        bubble_content += bubble_innerHTML;
+                        document.getElementById('pde_carto').innerHTML = bubble_content;
+                        var marker = new H.map.Marker(center);
+                        marker_group.addObject(marker);
                     }
-                    document.getElementById('pde_carto').innerHTML = bubble_content;
-                    var marker = new H.map.Marker(center);
-                    marker_group.addObject(marker);
-                    /*
-                    var bubble = new H.ui.InfoBubble(center, {
-                        content: bubble_content.toString()
-                    });
-                    ui.addBubble(bubble);
-                    */
-                }).catch(function onRejected(error) {
-                    console.error(error);
                 });
             }
             map.addEventListener('contextmenu', click_to_carto);
@@ -253,7 +257,7 @@
                 var view_port = map.getViewPort();
                 view_port.resize();
             }
-            
+
             document.getElementById('searchbar').addEventListener('keypress', onSearch)
 
             function onSearch(e) {
@@ -268,7 +272,7 @@
                     var geocodingParams = {
                         searchText: geocoder_string
                     };
-                    geocoder.geocode(geocodingParams, show_geocode_result, function(e) {
+                    geocoder.geocode(geocodingParams, show_geocode_result, function (e) {
                         console.log(e);
                     });
                 }
@@ -297,7 +301,7 @@
                     }, {
                         content: location['Location']['Address']['Label']
                     })
-                    geocoder_result_marker.addEventListener('tap', function() {
+                    geocoder_result_marker.addEventListener('tap', function () {
                         purge_bubble();
                         ui.addBubble(bubble);
                     });
@@ -306,7 +310,6 @@
                     window.alert('Please input a valid address!');
                 }
             };
-            
         </script>
     </div>
 </body>
